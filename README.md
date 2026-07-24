@@ -139,7 +139,7 @@ Authorization: Bearer <accessToken>
 |-------------|--------|-------------|----------------------------------------------|
 | `page`      | number | `1`         | Page number                                  |
 | `limit`     | number | `10`        | Results per page                             |
-| `search`    | string | —           | Case-insensitive match on name or email      |
+| `search`    | string | —           | Match on name or email (case-insensitive on SQLite) |
 | `status`    | enum   | —           | Filter by `PENDING`, `SHORTLISTED`, `ACCEPTED`, `REJECTED` |
 | `track`     | enum   | —           | Filter by internship track                   |
 | `sortBy`    | string | `createdAt` | Sort field: `createdAt`, `name`, or `status` |
