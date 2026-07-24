@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -7,6 +8,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateApplicantDto } from './dto/create-applicant.dto';
 import { UpdateApplicantDto } from './dto/update-applicant.dto';
 import { QueryApplicantsDto } from './dto/query-applicants.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateNotesDto } from './dto/update-notes.dto';
+import { ApplicationStatus } from '@prisma/client';
 
 @Injectable()
 export class ApplicantsService {
@@ -119,5 +123,33 @@ export class ApplicantsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async updateStatus(id: number, dto: UpdateStatusDto) {
+    const applicant = await this.findOne(id);
+
+    if (
+      applicant.status === ApplicationStatus.REJECTED &&
+      dto.status === ApplicationStatus.ACCEPTED
+    ) {
+      throw new BadRequestException(
+        'Cannot transition status from REJECTED to ACCEPTED',
+      );
+    }
+
+    return this.prisma.applicant.update({
+      where: { id },
+      data: { status: dto.status },
+    });
+  }
+
+  async updateNotes(id: number, dto: UpdateNotesDto) {
+    // Ensure applicant exists and is not soft-deleted
+    await this.findOne(id);
+
+    return this.prisma.applicant.update({
+      where: { id },
+      data: { notes: dto.notes },
+    });
   }
 }

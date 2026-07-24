@@ -15,6 +15,8 @@ import { ApplicantsService } from './applicants.service';
 import { CreateApplicantDto } from './dto/create-applicant.dto';
 import { QueryApplicantsDto } from './dto/query-applicants.dto';
 import { UpdateApplicantDto } from './dto/update-applicant.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateNotesDto } from './dto/update-notes.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('api/applicants')
@@ -45,5 +47,21 @@ export class ApplicantsController {
   @Delete(':id')
   softDelete(@Param('id', ParseIntPipe) id: number) {
     return this.applicantsService.softDelete(id);
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatusDto,
+  ) {
+    return this.applicantsService.updateStatus(id, dto);
+  }
+
+  @Patch(':id/notes')
+  updateNotes(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateNotesDto,
+  ) {
+    return this.applicantsService.updateNotes(id, dto);
   }
 }
