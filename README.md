@@ -1,98 +1,232 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# INFNOVA Internship Applicant Management API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend take-home challenge — NestJS REST API for managing internship applicants, with JWT authentication, soft deletes, and a dashboard summary.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **NestJS 11** — framework
+- **Prisma 6** (SQLite) — ORM and database (note: Prisma 7 has breaking datasource changes; this project intentionally stays on v6)
+- **passport-jwt / @nestjs/jwt** — authentication
+- **class-validator / class-transformer** — DTO validation
+- **bcrypt** — password hashing
+- **@nestjs/swagger** — API documentation
 
-## Project setup
+---
+
+## Prerequisites
+
+- Node.js 18+
+- npm 9+
+
+---
+
+## Setup
 
 ```bash
-$ npm install
+# 1. Clone the repository
+git clone https://github.com/eyob42/infnova-applicant-api.git
+cd infnova-applicant-api
+
+# 2. Install dependencies
+npm install
+
+# 3. Configure environment
+cp .env.example .env
+# Edit .env — at minimum set JWT_SECRET to a strong random string
+
+# 4. Run database migrations
+npx prisma migrate deploy
+
+# 5. Seed the admin user
+npx prisma db seed
+
+# 6. Start the development server
+npm run start:dev
 ```
 
-## Compile and run the project
+The API will be available at `http://localhost:3000`.  
+Interactive API docs (Swagger UI): `http://localhost:3000/api/docs`
 
-```bash
-# development
-$ npm run start
+---
 
-# watch mode
-$ npm run start:dev
+## Environment Variables
 
-# production mode
-$ npm run start:prod
+| Variable       | Description                              | Example              |
+|----------------|------------------------------------------|----------------------|
+| `DATABASE_URL` | SQLite file path (relative to prisma/)   | `file:./dev.db`      |
+| `JWT_SECRET`   | Secret for signing JWT tokens            | `change-me`          |
+| `JWT_EXPIRES_IN` | Token expiry duration                  | `1d`                 |
+| `PORT`         | HTTP server port                         | `3000`               |
+
+See `.env.example` for a template.
+
+---
+
+## Seed / Demo Credentials
+
+> These are development/demo credentials only. Change before any real deployment.
+
+| Field    | Value                  |
+|----------|------------------------|
+| Email    | `admin@infnova.com`    |
+| Password | `Admin123!`            |
+
+---
+
+## Authentication
+
+All endpoints (including GETs) require a valid JWT bearer token.
+
+**Login** to get a token:
+```
+POST /api/auth/login
+Content-Type: application/json
+
+{ "email": "admin@infnova.com", "password": "Admin123!" }
 ```
 
-## Run tests
+Response:
+```json
+{
+  "accessToken": "eyJ...",
+  "admin": { "id": 1, "email": "admin@infnova.com" }
+}
+```
+
+Pass the token as a header on all subsequent requests:
+```
+Authorization: Bearer <accessToken>
+```
+
+---
+
+## API Reference
+
+### Auth
+
+| Method | Path             | Description              | Auth |
+|--------|------------------|--------------------------|------|
+| POST   | /api/auth/login  | Login, returns JWT token | No   |
+| GET    | /api/auth/me     | Get current admin info   | Yes  |
+
+### Applicants
+
+| Method | Path                        | Description                         |
+|--------|-----------------------------|-------------------------------------|
+| POST   | /api/applicants             | Create a new applicant              |
+| GET    | /api/applicants             | List applicants (paginated)         |
+| GET    | /api/applicants/:id         | Get a single applicant              |
+| PATCH  | /api/applicants/:id         | Update applicant fields             |
+| DELETE | /api/applicants/:id         | Soft-delete an applicant            |
+| PATCH  | /api/applicants/:id/status  | Update application status           |
+| PATCH  | /api/applicants/:id/notes   | Update applicant notes              |
+
+### Dashboard
+
+| Method | Path                  | Description                              |
+|--------|-----------------------|------------------------------------------|
+| GET    | /api/dashboard/summary | Aggregate counts by status and track    |
+
+---
+
+## List Endpoint Query Parameters
+
+`GET /api/applicants` supports the following query params:
+
+| Param       | Type   | Default     | Description                                  |
+|-------------|--------|-------------|----------------------------------------------|
+| `page`      | number | `1`         | Page number                                  |
+| `limit`     | number | `10`        | Results per page                             |
+| `search`    | string | —           | Case-insensitive match on name or email      |
+| `status`    | enum   | —           | Filter by `PENDING`, `SHORTLISTED`, `ACCEPTED`, `REJECTED` |
+| `track`     | enum   | —           | Filter by internship track                   |
+| `sortBy`    | string | `createdAt` | Sort field: `createdAt`, `name`, or `status` |
+| `sortOrder` | string | `desc`      | `asc` or `desc`                              |
+
+Example:
+```
+GET /api/applicants?page=1&limit=5&search=jane&status=PENDING&sortBy=name&sortOrder=asc
+```
+
+---
+
+## Internship Tracks
+
+- `FRONTEND_DEVELOPMENT`
+- `BACKEND_DEVELOPMENT`
+- `MOBILE_DEVELOPMENT`
+- `UI_UX_DESIGN`
+- `DATA_ANALYTICS`
+
+---
+
+## Business Rules
+
+- **Email uniqueness** — no two applicants may share the same email address.
+- **Notes max length** — notes are capped at 1000 characters.
+- **Status transition** — transitioning from `REJECTED` to `ACCEPTED` is blocked with a 400 error. All other transitions are permitted, per the literal spec (this is a deliberate choice, not an oversight).
+- **Soft deletes** — `DELETE /api/applicants/:id` sets `deletedAt` on the record rather than removing it. All list, detail, and dashboard queries exclude soft-deleted records.
+
+---
+
+## Architecture
+
+```
+src/
+├── auth/           # JWT strategy, guard, login DTO, auth service + controller
+├── applicants/     # Applicants CRUD, list, status/notes endpoints, DTOs
+├── dashboard/      # Summary aggregate endpoint
+├── prisma/         # PrismaService (global module)
+└── main.ts         # Bootstrap — ValidationPipe, Swagger, dotenv
+prisma/
+├── schema.prisma   # Admin + Applicant models, enums
+├── migrations/     # Migration history
+└── seed.ts         # Seeds the admin user
+```
+
+**Key design decisions:**
+- No business logic in controllers — controllers call services only.
+- `PrismaModule` is `@Global()`, so `PrismaService` is available everywhere without re-importing.
+- `ConfigModule` is `isGlobal: true` for the same reason.
+- `import 'dotenv/config'` is the very first line of `main.ts` to ensure `process.env` is fully populated before NestJS builds the module tree (avoids a DI initialization order issue with Prisma connecting before ConfigModule loads).
+- `ValidationPipe` is configured with `whitelist: true` (strips unknown fields) and `transform: true` (coerces query string values to their declared types).
+
+---
+
+## Running Tests
 
 ```bash
 # unit tests
-$ npm run test
+npm run test
 
 # e2e tests
-$ npm run test:e2e
+npm run test:e2e
 
-# test coverage
-$ npm run test:cov
+# coverage
+npm run test:cov
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Migrations
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+To apply migrations on a fresh database:
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npx prisma migrate deploy
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+To create a new migration during development:
+```bash
+npx prisma migrate dev --name <migration-name>
+```
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
+## Limitations
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- SQLite is used for simplicity. The Prisma schema and queries are compatible with PostgreSQL — swapping the `datasource` provider and `DATABASE_URL` is the only change needed.
+- No pagination cursor support — offset/limit only.
+- No role-based access control — a single admin user manages all applicants.
+- `search` uses Prisma's `contains` filter, which is case-insensitive on SQLite but case-sensitive on PostgreSQL. A production build would need `mode: 'insensitive'` added to the filter.
